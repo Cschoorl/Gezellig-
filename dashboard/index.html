@@ -169,6 +169,67 @@
   @media (prefers-color-scheme: dark) {
     .status-blocked { color: var(--warning); }
   }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .site-url-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex: 1 1 220px;
+  }
+  .site-url-label input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--page);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: #2a78d6;
+    color: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    .btn-primary { background: #3987e5; }
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .sim-status {
+    font-size: 13px;
+    color: var(--text-muted);
+    flex: 1 1 100%;
+  }
 </style>
 </head>
 <body>
@@ -177,6 +238,16 @@
       <h1>CreatorShield</h1>
       <div class="live"><span class="live-dot"></span> live</div>
     </header>
+
+    <div class="controls">
+      <label class="site-url-label">
+        Site-URL
+        <input id="site-url" type="text" placeholder="http://localhost:4021" />
+      </label>
+      <button id="btn-agent" class="btn btn-primary">Simuleer agent-bezoek</button>
+      <button id="btn-broke" class="btn btn-ghost">Simuleer robot zonder geld</button>
+      <span id="sim-status" class="sim-status"></span>
+    </div>
 
     <div class="hero-card">
       <p class="hero-label">Vandaag verdiend</p>
@@ -203,8 +274,41 @@
   </div>
 
 <script>
-  const EVENTS_URL = "http://localhost:4021/api/events";
   const STATUS_LABEL = { paid: "Betaald", free: "Gratis (mens)", blocked: "Geblokkeerd", failed: "Mislukt" };
+
+  const siteUrlInput = document.getElementById("site-url");
+  siteUrlInput.value = localStorage.getItem("creatorshield-site-url") || "http://localhost:4021";
+  siteUrlInput.addEventListener("change", () => {
+    localStorage.setItem("creatorshield-site-url", siteUrl());
+  });
+  function siteUrl() {
+    return siteUrlInput.value.trim().replace(/\/+$/, "") || "http://localhost:4021";
+  }
+
+  const simStatus = document.getElementById("sim-status");
+  async function runSimulation(button, path, pendingText) {
+    button.disabled = true;
+    simStatus.textContent = pendingText;
+    try {
+      const res = await fetch(`${siteUrl()}${path}`, { method: "POST" });
+      const result = await res.json();
+      simStatus.textContent =
+        result.status === "paid"
+          ? `Betaald — content ontvangen (${result.agent}).`
+          : `Geblokkeerd (HTTP ${result.httpStatus}) — geen content (${result.agent}).`;
+    } catch (err) {
+      simStatus.textContent = `Kon ${siteUrl()} niet bereiken — klopt de Site-URL?`;
+    }
+    button.disabled = false;
+    tick();
+  }
+
+  document.getElementById("btn-agent").addEventListener("click", e => {
+    runSimulation(e.target, "/api/simulate-agent", "Robotje betaalt…");
+  });
+  document.getElementById("btn-broke").addEventListener("click", e => {
+    runSimulation(e.target, "/api/simulate-agent-broke", "Robotje zonder geld probeert te betalen…");
+  });
 
   function parseAmount(amount) {
     const n = parseFloat(String(amount).replace("$", ""));
@@ -218,7 +322,7 @@
   async function tick() {
     let events;
     try {
-      const res = await fetch(EVENTS_URL);
+      const res = await fetch(`${siteUrl()}/api/events`);
       events = await res.json();
     } catch (err) {
       document.getElementById("hero-sub").textContent = "kan /api/events niet bereiken — draait de site-server?";

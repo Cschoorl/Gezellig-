@@ -1,6 +1,6 @@
 import express from "express";
 
-const PORT = 4022;
+const PORT = process.env.PORT || 4022;
 
 const app = express();
 app.use(express.static(new URL(".", import.meta.url).pathname));

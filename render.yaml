@@ -1,0 +1,29 @@
+services:
+  - name: creatorshield-site
+    type: web
+    runtime: node
+    plan: free
+    rootDir: site
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NETWORK
+        value: base-sepolia
+      - key: FACILITATOR_URL
+        value: https://x402.org/facilitator
+      - key: PUBLISHER_ADDRESS
+        value: "0x4a304e7217547Fe5c9FFe236F3b61A9aC03DcEEf"
+      - key: AGENT_ADDRESS
+        value: "0xa7D0BD57cc21C5ba5ED6dD4E0b18Bd63d4089701"
+      - key: PUBLISHER_PRIVATE_KEY
+        sync: false
+      - key: AGENT_PRIVATE_KEY
+        sync: false
+
+  - name: creatorshield-dashboard
+    type: web
+    runtime: node
+    plan: free
+    rootDir: dashboard
+    buildCommand: npm install
+    startCommand: npm start

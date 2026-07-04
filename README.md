@@ -5,7 +5,7 @@ voor toegang terwijl mensen gratis binnen blijven komen.
 
 - `site/` — Express-server die het premium-artikel serveert achter een x402-betaalmuur (mensen gratis, bots betalen)
 - `agent/` — script dat als AI-agent het artikel opvraagt en betaalt via x402
-- `dashboard/` — live scorebord van betaalde/gratis/geblokkeerde bezoeken
+- `dashboard/` — live scorebord van betaalde/gratis/geblokkeerde bezoeken, met knoppen om een agent-bezoek te simuleren
 - `scripts/generate-wallets.mjs` — genereert de publisher- en agent-testnetwallets
 
 ## Netwerk
@@ -13,16 +13,37 @@ voor toegang terwijl mensen gratis binnen blijven komen.
 Base Sepolia (testnet). De agent-wallet heeft testnet ETH (gas) en testnet USDC
 (betaalmiddel) nodig — beide te verkrijgen via de [CDP faucet](https://portal.cdp.coinbase.com/products/faucet).
 
-## Setup
+## Testen — live URL, geen terminal nodig (aanbevolen)
 
-```bash
-npm install
-node scripts/generate-wallets.mjs   # genereert .env met publisher/agent wallets (eenmalig)
-```
+Dit deployt `site/` en `dashboard/` als twee gratis Render-services, met een
+dashboard waarin je op knoppen klikt in plaats van commando's te typen.
 
-`.env` wordt nooit gecommit.
+1. Klik: [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Cschoorl/Gezellig-)
+2. Log in / maak een gratis Render-account aan en verbind je GitHub-account
+   als daarom gevraagd wordt.
+3. Render leest `render.yaml` uit deze repo en vraagt om 2 waardes
+   (de rest staat al klaar):
+   - `PUBLISHER_PRIVATE_KEY`
+   - `AGENT_PRIVATE_KEY`
 
-## Testen via GitHub Codespaces (geen lokale installatie nodig)
+   Dit zijn de private keys uit je eigen lokale `.env`-bestand (testnet-only,
+   geen echte waarde).
+4. Klik **Apply** / **Create services**. Render bouwt en start beide services
+   (duurt een paar minuten).
+5. Open de URL van de **creatorshield-dashboard**-service (te vinden op je
+   Render-dashboard, iets als `https://creatorshield-dashboard-xxxx.onrender.com`).
+6. Plak bovenaan de pagina, in het veld **Site-URL**, de URL van de
+   **creatorshield-site**-service (iets als
+   `https://creatorshield-site-xxxx.onrender.com`) en druk Enter/Tab.
+7. Klik **"Simuleer agent-bezoek"** — het robotje betaalt $0.02 USDC en de
+   teller/tabel updaten live. Klik **"Simuleer robot zonder geld"** om het
+   geblokkeerde scenario te zien.
+
+Let op: op het gratis Render-plan gaan services na ~15 min inactiviteit in
+slaap — de eerste request daarna duurt ~30-60 sec om wakker te worden. Ook
+reset de bezoekenlijst dan (die staat alleen in het geheugen).
+
+## Testen via GitHub Codespaces (browser-terminal, geen lokale installatie)
 
 1. Ga naar de repo-instellingen: **Settings → Secrets and variables → Codespaces**.
 2. Voeg deze 6 repository secrets toe (waardes uit je eigen lokale `.env`):
@@ -41,7 +62,7 @@ node scripts/generate-wallets.mjs   # genereert .env met publisher/agent wallets
    voorbeeld-URL/pop-up — open die. Voor het robotje: open een tweede
    terminal-tab in de Codespace en draai `cd agent && node index.js`.
 
-## Draaien
+## Lokaal draaien
 
 Eenmalig installeren:
 
@@ -61,7 +82,8 @@ npm run dev
 Open http://localhost:4022 voor het live dashboard, of
 http://localhost:4021/premium/artikel-42 voor de ruwe endpoint.
 
-Het robotje draai je apart, in een eigen terminal:
+Het robotje draai je apart, in een eigen terminal (of klik de knoppen op het
+dashboard — die doen hetzelfde):
 
 ```bash
 cd agent
@@ -73,8 +95,8 @@ node index.js --broke     # ongefinancierde wallet: blijft op 402 hangen
 
 1. Open het dashboard in de browser — gewoon zichtbaar, mensen komen gratis binnen.
 2. `curl -A "Mozilla/5.0" http://localhost:4021/premium/artikel-42` — een browser krijgt de content gratis.
-3. `cd agent && node index.js` — het robotje (met een bot-user-agent) botst op de muur, betaalt $0.02 USDC en krijgt de content. Het dashboard springt live omhoog.
-4. `node index.js --broke` — een robotje zonder testnet-geld blijft op 402 hangen.
+3. Klik **"Simuleer agent-bezoek"** (of `cd agent && node index.js`) — het robotje (met een bot-user-agent) botst op de muur, betaalt $0.02 USDC en krijgt de content. Het dashboard springt live omhoog.
+4. Klik **"Simuleer robot zonder geld"** (of `node index.js --broke`) — een robotje zonder testnet-geld blijft op 402 hangen.
 5. Sluit af met het dashboard: "dít scorebord is onze salespitch aan elke uitgever."
 
 ## Status
@@ -88,3 +110,4 @@ node index.js --broke     # ongefinancierde wallet: blijft op 402 hangen
 - [x] Stap 6 — live dashboard
 - [x] Stap 7 — mensen gratis, bots betalen
 - [x] Stap 8 — poetsen: één commando voor de stack, blocked-demo, README
+- [x] Stap 9 — live deploy (Render) + Codespaces, met klik-knoppen i.p.v. terminal

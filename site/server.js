@@ -2,12 +2,15 @@ import { config } from "dotenv";
 import express from "express";
 import cors from "cors";
 import { paymentMiddleware, x402ResourceServer } from "@x402/express";
-import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { ExactEvmScheme as ExactEvmServerScheme } from "@x402/evm/exact/server";
+import { ExactEvmScheme as ExactEvmClientScheme } from "@x402/evm/exact/client";
 import { HTTPFacilitatorClient } from "@x402/core/server";
+import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 config({ path: new URL("../.env", import.meta.url) });
 
-const PORT = 4021;
+const PORT = process.env.PORT || 4021;
 const BASE_SEPOLIA = "eip155:84532";
 const PRICE = "$0.02";
 const KNOWN_BOTS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"];
@@ -94,7 +97,7 @@ app.use(
         mimeType: "application/json",
       },
     },
-    new x402ResourceServer(facilitatorClient).register(BASE_SEPOLIA, new ExactEvmScheme()),
+    new x402ResourceServer(facilitatorClient).register(BASE_SEPOLIA, new ExactEvmServerScheme()),
   ),
 );
 
@@ -104,6 +107,46 @@ app.get("/premium/artikel-42", (req, res) => {
 
 app.get("/api/events", (req, res) => {
   res.json(events);
+});
+
+const agentPrivateKey = process.env.AGENT_PRIVATE_KEY;
+
+async function simulateAgentVisit(privateKey, agentName) {
+  const signer = privateKeyToAccount(privateKey);
+  const client = new x402Client();
+  client.register(BASE_SEPOLIA, new ExactEvmClientScheme(signer));
+  const fetchWithPayment = wrapFetchWithPayment(fetch, client);
+  const headers = { "X-Agent-Name": agentName, "User-Agent": "GPTBot" };
+
+  const res = await fetchWithPayment(`http://localhost:${PORT}/premium/artikel-42`, { headers });
+  const paid = res.status === 200;
+  return {
+    agent: agentName,
+    status: paid ? "paid" : "blocked",
+    httpStatus: res.status,
+    content: paid ? await res.json() : null,
+  };
+}
+
+app.post("/api/simulate-agent", async (req, res) => {
+  if (!agentPrivateKey) {
+    return res.status(400).json({ error: "AGENT_PRIVATE_KEY ontbreekt" });
+  }
+  try {
+    const result = await simulateAgentVisit(agentPrivateKey, "dashboard-demo-agent");
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/simulate-agent-broke", async (req, res) => {
+  try {
+    const result = await simulateAgentVisit(generatePrivateKey(), "dashboard-broke-agent");
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {
