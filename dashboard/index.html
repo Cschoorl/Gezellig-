@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<title>CreatorShield — Live scorebord</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --page:           #f9f9f7;
+    --surface:        #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --good:           #0ca30c;
+    --warning:        #fab219;
+    --critical:       #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page:           #0d0d0d;
+      --surface:        #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --good:           #0ca30c;
+      --warning:        #fab219;
+      --critical:       #ec835a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .hero-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+  }
+  .hero-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+  }
+  .hero-value {
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0;
+    font-variant-numeric: proportional-nums;
+  }
+  .hero-sub {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  tbody td {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--gridline);
+    color: var(--text-primary);
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  td.mono, td.time {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+  .empty-row td {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 28px 20px;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .status-paid .status-dot { background: var(--good); }
+  .status-paid { color: var(--good); }
+  .status-blocked .status-dot { background: var(--warning); }
+  .status-blocked { color: #8a6400; }
+  .status-failed .status-dot { background: var(--critical); }
+  .status-failed { color: var(--critical); }
+  @media (prefers-color-scheme: dark) {
+    .status-blocked { color: var(--warning); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>CreatorShield</h1>
+      <div class="live"><span class="live-dot"></span> live</div>
+    </header>
+
+    <div class="hero-card">
+      <p class="hero-label">Vandaag verdiend</p>
+      <p class="hero-value" id="hero-value">$0.00</p>
+      <p class="hero-sub" id="hero-sub">nog geen betalingen</p>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">Laatste bezoeken</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Pagina</th>
+            <th>Status</th>
+            <th>Tijd</th>
+          </tr>
+        </thead>
+        <tbody id="events-body">
+          <tr class="empty-row"><td colspan="4">Wachten op het eerste bezoek…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const EVENTS_URL = "http://localhost:4021/api/events";
+  const STATUS_LABEL = { paid: "Betaald", blocked: "Geblokkeerd", failed: "Mislukt" };
+
+  function parseAmount(amount) {
+    const n = parseFloat(String(amount).replace("$", ""));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function formatTime(iso) {
+    return new Date(iso).toLocaleTimeString("nl-NL", { hour12: false });
+  }
+
+  async function tick() {
+    let events;
+    try {
+      const res = await fetch(EVENTS_URL);
+      events = await res.json();
+    } catch (err) {
+      document.getElementById("hero-sub").textContent = "kan /api/events niet bereiken — draait de site-server?";
+      return;
+    }
+
+    const paid = events.filter(e => e.status === "paid");
+    const total = paid.reduce((sum, e) => sum + parseAmount(e.amount), 0);
+
+    document.getElementById("hero-value").textContent = "$" + total.toFixed(2);
+    document.getElementById("hero-sub").textContent =
+      paid.length === 0 ? "nog geen betalingen" : `${paid.length} betaalde ${paid.length === 1 ? "bezoek" : "bezoeken"}`;
+
+    const body = document.getElementById("events-body");
+    if (events.length === 0) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="4">Wachten op het eerste bezoek…</td></tr>';
+      return;
+    }
+
+    body.innerHTML = events
+      .slice()
+      .reverse()
+      .slice(0, 30)
+      .map(e => {
+        const status = e.status in STATUS_LABEL ? e.status : "failed";
+        return `<tr>
+          <td>${e.agent}</td>
+          <td class="mono">${e.page}</td>
+          <td><span class="status status-${status}"><span class="status-dot"></span>${STATUS_LABEL[status]}</span></td>
+          <td class="time">${formatTime(e.timestamp)}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  tick();
+  setInterval(tick, 1500);
+</script>
+</body>
+</html>
