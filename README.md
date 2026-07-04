@@ -24,14 +24,39 @@ node scripts/generate-wallets.mjs   # genereert .env met publisher/agent wallets
 
 ## Draaien
 
+Eenmalig installeren:
+
 ```bash
-cd site && npm install && npm start        # poort 4021
-cd dashboard && npm install && npm start   # poort 4022
-cd agent && npm install && node index.js   # robotje: 402 -> betaald -> 200
+npm install
+(cd site && npm install)
+(cd dashboard && npm install)
+(cd agent && npm install)
+```
+
+Stack starten (server + dashboard in één commando):
+
+```bash
+npm run dev
 ```
 
 Open http://localhost:4022 voor het live dashboard, of
 http://localhost:4021/premium/artikel-42 voor de ruwe endpoint.
+
+Het robotje draai je apart, in een eigen terminal:
+
+```bash
+cd agent
+node index.js            # betaalt en krijgt de content: 402 -> betaald -> 200
+node index.js --broke     # ongefinancierde wallet: blijft op 402 hangen
+```
+
+## Demo-script (~90 sec)
+
+1. Open het dashboard in de browser — gewoon zichtbaar, mensen komen gratis binnen.
+2. `curl -A "Mozilla/5.0" http://localhost:4021/premium/artikel-42` — een browser krijgt de content gratis.
+3. `cd agent && node index.js` — het robotje (met een bot-user-agent) botst op de muur, betaalt $0.02 USDC en krijgt de content. Het dashboard springt live omhoog.
+4. `node index.js --broke` — een robotje zonder testnet-geld blijft op 402 hangen.
+5. Sluit af met het dashboard: "dít scorebord is onze salespitch aan elke uitgever."
 
 ## Status
 
@@ -43,3 +68,4 @@ http://localhost:4021/premium/artikel-42 voor de ruwe endpoint.
 - [x] Stap 5 — bezoeken loggen
 - [x] Stap 6 — live dashboard
 - [x] Stap 7 — mensen gratis, bots betalen
+- [x] Stap 8 — poetsen: één commando voor de stack, blocked-demo, README

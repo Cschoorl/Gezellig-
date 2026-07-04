@@ -3,7 +3,13 @@
   "private": true,
   "type": "module",
   "version": "0.0.1",
+  "scripts": {
+    "dev": "concurrently -n site,dashboard -c blue,magenta \"npm --prefix site start\" \"npm --prefix dashboard start\""
+  },
   "dependencies": {
     "viem": "^2.54.3"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }
