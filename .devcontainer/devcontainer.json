@@ -1,0 +1,11 @@
+{
+  "name": "CreatorShield",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [4021, 4022],
+  "portsAttributes": {
+    "4021": { "label": "Site (x402-muur)", "onAutoForward": "notify" },
+    "4022": { "label": "Dashboard", "onAutoForward": "openPreview" }
+  },
+  "postCreateCommand": "npm install && npm --prefix site install && npm --prefix agent install && npm --prefix dashboard install",
+  "postAttachCommand": "echo 'Klaar. Draai: npm run dev   (en in een tweede terminal: cd agent && node index.js)'"
+}

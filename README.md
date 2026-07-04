@@ -22,6 +22,25 @@ node scripts/generate-wallets.mjs   # genereert .env met publisher/agent wallets
 
 `.env` wordt nooit gecommit.
 
+## Testen via GitHub Codespaces (geen lokale installatie nodig)
+
+1. Ga naar de repo-instellingen: **Settings → Secrets and variables → Codespaces**.
+2. Voeg deze 6 repository secrets toe (waardes uit je eigen lokale `.env`):
+   `NETWORK`, `FACILITATOR_URL`, `PUBLISHER_ADDRESS`, `PUBLISHER_PRIVATE_KEY`,
+   `AGENT_ADDRESS`, `AGENT_PRIVATE_KEY`. Zo gebruikt de Codespace dezelfde,
+   al-gefinancierde testnet-wallets — geen `.env`-bestand nodig, Codespaces
+   zet secrets automatisch als environment variables.
+3. Ga naar de hoofdpagina van de repo → knop **Code** → tab **Codespaces** →
+   **Create codespace on main**.
+4. Wacht tot de setup klaar is (installeert automatisch alle dependencies).
+   Open dan in de Codespace-terminal:
+   ```bash
+   npm run dev
+   ```
+5. Codespaces stuurt poort 4022 (dashboard) automatisch door en toont een
+   voorbeeld-URL/pop-up — open die. Voor het robotje: open een tweede
+   terminal-tab in de Codespace en draai `cd agent && node index.js`.
+
 ## Draaien
 
 Eenmalig installeren:
