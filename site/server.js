@@ -13,7 +13,19 @@ config({ path: new URL("../.env", import.meta.url) });
 const PORT = process.env.PORT || 4021;
 const BASE_SEPOLIA = "eip155:84532";
 const PRICE = "$0.02";
-const KNOWN_BOTS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"];
+// Substrings matched against the real User-Agent strings these crawlers send
+// (verified against openai.com/gptbot, /bot, /searchbot docs). ChatGPT-User is
+// what ChatGPT itself sends when it fetches a link on a user's behalf.
+const KNOWN_BOTS = [
+  "GPTBot",
+  "ChatGPT-User",
+  "OAI-SearchBot",
+  "ClaudeBot",
+  "PerplexityBot",
+  "Google-Extended",
+];
+const CHATGPT_USER_AGENT =
+  "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot";
 
 const PREMIUM_ARTICLE = {
   title: "De toekomst van AI-agents en het open web",
@@ -144,6 +156,24 @@ app.post("/api/simulate-agent-broke", async (req, res) => {
   try {
     const result = await simulateAgentVisit(generatePrivateKey(), "dashboard-broke-agent");
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// A generic AI has no wallet at all, so this is a plain fetch — no x402
+// client, no signer, nothing to retry with. It sends ChatGPT's real
+// User-Agent, so it hits exactly the same wall a live ChatGPT browse would.
+app.post("/api/simulate-generic-ai", async (req, res) => {
+  try {
+    const r = await fetch(`http://localhost:${PORT}/premium/artikel-42`, {
+      headers: { "X-Agent-Name": "Generieke AI (ChatGPT)", "User-Agent": CHATGPT_USER_AGENT },
+    });
+    res.json({
+      agent: "Generieke AI (ChatGPT)",
+      status: r.status === 200 ? "paid" : "blocked",
+      httpStatus: r.status,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

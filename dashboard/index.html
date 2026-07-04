@@ -170,6 +170,85 @@
     .status-blocked { color: var(--warning); }
   }
 
+  .race-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px 28px;
+  }
+  .race-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .race-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 18px;
+  }
+  .btn-race {
+    display: block;
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .race-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 640px) {
+    .race-results { grid-template-columns: 1fr; }
+  }
+  .race-col {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 16px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .race-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+  .race-glyph {
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text-muted);
+  }
+  .race-verdict {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .race-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .race-col.is-pending .race-glyph { animation: pulse 1s ease-in-out infinite; }
+  .race-col.is-blocked {
+    border-color: var(--critical);
+    background: color-mix(in srgb, var(--critical) 8%, var(--surface));
+  }
+  .race-col.is-blocked .race-glyph,
+  .race-col.is-blocked .race-verdict { color: var(--critical); }
+  .race-col.is-paid {
+    border-color: var(--good);
+    background: color-mix(in srgb, var(--good) 8%, var(--surface));
+  }
+  .race-col.is-paid .race-glyph,
+  .race-col.is-paid .race-verdict { color: var(--good); }
+
   .controls {
     display: flex;
     align-items: center;
@@ -239,12 +318,32 @@
       <div class="live"><span class="live-dot"></span> live</div>
     </header>
 
+    <div class="race-card">
+      <p class="race-title">Wie komt er binnen?</p>
+      <p class="race-sub">Dezelfde pagina, twee soorten bezoekers — tegelijk getest.</p>
+      <button id="btn-race" class="btn btn-primary btn-race">Vergelijk: generieke AI vs. onze agent</button>
+      <div class="race-results">
+        <div class="race-col" id="race-generic">
+          <div class="race-label">Generieke AI (ChatGPT)</div>
+          <div class="race-glyph">—</div>
+          <div class="race-verdict">Nog niet getest</div>
+          <div class="race-detail">geen wallet gekoppeld</div>
+        </div>
+        <div class="race-col" id="race-ours">
+          <div class="race-label">Onze agent (eigen wallet)</div>
+          <div class="race-glyph">—</div>
+          <div class="race-verdict">Nog niet getest</div>
+          <div class="race-detail">betaalt automatisch</div>
+        </div>
+      </div>
+    </div>
+
     <div class="controls">
       <label class="site-url-label">
         Site-URL
         <input id="site-url" type="text" placeholder="http://localhost:4021" />
       </label>
-      <button id="btn-agent" class="btn btn-primary">Simuleer agent-bezoek</button>
+      <button id="btn-agent" class="btn btn-ghost">Simuleer agent-bezoek</button>
       <button id="btn-broke" class="btn btn-ghost">Simuleer robot zonder geld</button>
       <span id="sim-status" class="sim-status"></span>
     </div>
@@ -308,6 +407,54 @@
   });
   document.getElementById("btn-broke").addEventListener("click", e => {
     runSimulation(e.target, "/api/simulate-agent-broke", "Robotje zonder geld probeert te betalen…");
+  });
+
+  function setRaceState(colId, state, verdict, detail) {
+    const col = document.getElementById(colId);
+    col.className = "race-col" + (state ? ` is-${state}` : "");
+    col.querySelector(".race-glyph").textContent = state === "blocked" ? "✕" : state === "paid" ? "✓" : "—";
+    col.querySelector(".race-verdict").textContent = verdict;
+    col.querySelector(".race-detail").textContent = detail;
+  }
+
+  document.getElementById("btn-race").addEventListener("click", async e => {
+    const btn = e.target;
+    btn.disabled = true;
+    setRaceState("race-generic", "pending", "Bezig…", "stuurt verzoek zonder wallet");
+    setRaceState("race-ours", "pending", "Bezig…", "stuurt verzoek + betaling");
+
+    const url = siteUrl();
+    const [genericOutcome, oursOutcome] = await Promise.allSettled([
+      fetch(`${url}/api/simulate-generic-ai`, { method: "POST" }).then(r => r.json()),
+      fetch(`${url}/api/simulate-agent`, { method: "POST" }).then(r => r.json()),
+    ]);
+
+    if (genericOutcome.status === "fulfilled") {
+      const r = genericOutcome.value;
+      setRaceState(
+        "race-generic",
+        r.status === "paid" ? "paid" : "blocked",
+        r.status === "paid" ? "Kreeg toegang" : "Geblokkeerd",
+        `HTTP ${r.httpStatus} — geen wallet gekoppeld`,
+      );
+    } else {
+      setRaceState("race-generic", "blocked", "Kon niet testen", "klopt de Site-URL?");
+    }
+
+    if (oursOutcome.status === "fulfilled") {
+      const r = oursOutcome.value;
+      setRaceState(
+        "race-ours",
+        r.status === "paid" ? "paid" : "blocked",
+        r.status === "paid" ? "Toegang gekocht" : "Geblokkeerd",
+        r.status === "paid" ? "$0.02 USDC betaald" : `HTTP ${r.httpStatus}`,
+      );
+    } else {
+      setRaceState("race-ours", "blocked", "Kon niet testen", "klopt de Site-URL?");
+    }
+
+    btn.disabled = false;
+    tick();
   });
 
   function parseAmount(amount) {
