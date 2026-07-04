@@ -50,6 +50,7 @@ const facilitatorClient = new HTTPFacilitatorClient({ url: facilitatorUrl });
 
 const app = express();
 app.use(cors());
+app.use(express.static(new URL("./public", import.meta.url).pathname));
 
 const events = [];
 
