@@ -1,8 +1,15 @@
 // CreatorShield x402-muur — plak dit bestand in je eigen Express-project.
 // Installeer eerst: npm install @x402/express @x402/evm @x402/core
 //
-// Gebruik:
-//   import { creatorShieldWall } from "./creatorshield-wall.js";
+// .cjs-bestand met bewust require()/module.exports (geen import/export):
+// zo werkt het altijd, ongeacht of jouw project CommonJS of ESM is, en
+// ongeacht welke Node-versie (18+) je draait.
+//
+// Gebruik (CommonJS):
+//   const { creatorShieldWall } = require("./creatorshield-wall.cjs");
+//
+// Gebruik (ESM / "type": "module" in package.json):
+//   import { creatorShieldWall } from "./creatorshield-wall.cjs";
 //
 //   app.get(
 //     "/mijn-artikel",
@@ -18,9 +25,9 @@
 // (GPTBot, ChatGPT-User, OAI-SearchBot, ClaudeBot, PerplexityBot,
 // Google-Extended) krijgen de betaalmuur voorgeschoteld.
 
-import { paymentMiddleware, x402ResourceServer } from "@x402/express";
-import { ExactEvmScheme } from "@x402/evm/exact/server";
-import { HTTPFacilitatorClient } from "@x402/core/server";
+const { paymentMiddleware, x402ResourceServer } = require("@x402/express");
+const { ExactEvmScheme } = require("@x402/evm/exact/server");
+const { HTTPFacilitatorClient } = require("@x402/core/server");
 
 const KNOWN_BOTS = [
   "GPTBot",
@@ -45,7 +52,7 @@ function isKnownBot(userAgent) {
  * @param {string} [opts.facilitatorUrl] - x402-facilitator, standaard de gratis publieke testnet-facilitator
  * @param {string} [opts.description] - omschrijving die in de 402-instructies verschijnt
  */
-export function creatorShieldWall({
+function creatorShieldWall({
   route,
   price,
   payTo,
@@ -80,3 +87,5 @@ export function creatorShieldWall({
     return wall(req, res, next);
   };
 }
+
+module.exports = { creatorShieldWall };
