@@ -160,6 +160,8 @@
   }
   .status-paid .status-dot { background: var(--good); }
   .status-paid { color: var(--good); }
+  .status-free .status-dot { background: var(--text-muted); }
+  .status-free { color: var(--text-muted); }
   .status-blocked .status-dot { background: var(--warning); }
   .status-blocked { color: #8a6400; }
   .status-failed .status-dot { background: var(--critical); }
@@ -202,7 +204,7 @@
 
 <script>
   const EVENTS_URL = "http://localhost:4021/api/events";
-  const STATUS_LABEL = { paid: "Betaald", blocked: "Geblokkeerd", failed: "Mislukt" };
+  const STATUS_LABEL = { paid: "Betaald", free: "Gratis (mens)", blocked: "Geblokkeerd", failed: "Mislukt" };
 
   function parseAmount(amount) {
     const n = parseFloat(String(amount).replace("$", ""));

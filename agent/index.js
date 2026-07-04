@@ -16,7 +16,9 @@ if (!agentPrivateKey) {
 }
 
 const signer = privateKeyToAccount(agentPrivateKey);
-const headers = { "X-Agent-Name": AGENT_NAME };
+// User-Agent doet zich voor als GPTBot: laat zien dat de muur bot-verkeer
+// herkent (en dat dat op user-agent zelf niet te vertrouwen is).
+const headers = { "X-Agent-Name": AGENT_NAME, "User-Agent": "GPTBot" };
 
 console.log("1) Onbetaald verzoek...");
 const unpaidRes = await fetch(URL_TO_FETCH, { headers });

@@ -10,6 +10,18 @@ config({ path: new URL("../.env", import.meta.url) });
 const PORT = 4021;
 const BASE_SEPOLIA = "eip155:84532";
 const PRICE = "$0.02";
+const KNOWN_BOTS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"];
+
+const PREMIUM_ARTICLE = {
+  title: "De toekomst van AI-agents en het open web",
+  author: "CreatorShield",
+  body: "Dit is premium content die alleen zichtbaar zou moeten zijn na betaling. Vandaag staat de deur nog open.",
+};
+
+function isKnownBot(userAgent) {
+  if (!userAgent) return false;
+  return KNOWN_BOTS.some(bot => userAgent.includes(bot));
+}
 
 const payTo = process.env.PUBLISHER_ADDRESS;
 const facilitatorUrl = process.env.FACILITATOR_URL;
@@ -32,7 +44,8 @@ app.use((req, res, next) => {
     if (req.path !== "/premium/artikel-42") return;
 
     let status;
-    if (res.statusCode === 200) status = "paid";
+    if (res.locals.creatorshieldStatus) status = res.locals.creatorshieldStatus;
+    else if (res.statusCode === 200) status = "paid";
     else if (res.statusCode === 402) status = "blocked";
     else status = "failed";
 
@@ -59,6 +72,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/premium/artikel-42", (req, res, next) => {
+  if (isKnownBot(req.get("user-agent"))) return next();
+  res.locals.creatorshieldStatus = "free";
+  res.json(PREMIUM_ARTICLE);
+});
+
 app.use(
   paymentMiddleware(
     {
@@ -80,11 +99,7 @@ app.use(
 );
 
 app.get("/premium/artikel-42", (req, res) => {
-  res.json({
-    title: "De toekomst van AI-agents en het open web",
-    author: "CreatorShield",
-    body: "Dit is premium content die alleen zichtbaar zou moeten zijn na betaling. Vandaag staat de deur nog open.",
-  });
+  res.json(PREMIUM_ARTICLE);
 });
 
 app.get("/api/events", (req, res) => {
